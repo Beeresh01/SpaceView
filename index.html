@@ -724,6 +724,15 @@ body.cockpit-active .sv-speed-badge{
 }
 </style>
 
+
+<style id="spaceview-educational-v14">
+  #educationPanel summary::-webkit-details-marker{display:none}
+  #educationPanel summary{user-select:none}
+  #educationPanel[open] summary{border-bottom:1px solid rgba(103,232,249,.08)}
+  #educationPanel summary span:last-child{transition:transform .2s ease}
+  #educationPanel[open] summary span:last-child{transform:rotate(180deg)}
+</style>
+
 </head>
 <body>
 <div id="realismHud">PHOTOREALISTIC TEXTURES · DEEP SKY OBSERVATORY MODE</div>
@@ -874,6 +883,31 @@ body.cockpit-active .sv-speed-badge{
       <span id="factChip" class="chip"></span>
       <span id="classChip" class="chip"></span>
     </div>
+
+    <details id="educationPanel" class="mt-3 rounded-xl border border-cyan-400/10 bg-slate-950/30">
+      <summary class="cursor-pointer list-none px-3 py-2 text-[10px] uppercase tracking-[.16em] text-cyan-300 font-bold">
+        <span>📚 Learn More</span>
+        <span class="float-right text-slate-500">OPEN</span>
+      </summary>
+      <div class="px-3 pb-3 space-y-2.5 text-[10px] leading-relaxed">
+        <div>
+          <div class="text-[9px] uppercase tracking-[.15em] text-slate-500">Composition & Structure</div>
+          <div id="eduComposition" class="text-slate-300 mt-1"></div>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase tracking-[.15em] text-slate-500">Key Science</div>
+          <div id="eduScience" class="text-slate-300 mt-1"></div>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase tracking-[.15em] text-slate-500">Exploration</div>
+          <div id="eduExploration" class="text-slate-300 mt-1"></div>
+        </div>
+        <div>
+          <div class="text-[9px] uppercase tracking-[.15em] text-slate-500">Why It Matters</div>
+          <div id="eduImportance" class="text-slate-300 mt-1"></div>
+        </div>
+      </div>
+    </details>
   </aside>
 
   <!-- Category Nav Left -->
@@ -1496,6 +1530,7 @@ function createMoon(def){
   moonLabels.push({mesh,sprite});
 }
 MOON_DEFS.forEach(createMoon);
+window.moonMeshes = moonMeshes;
 
 // Billboard Labels
 let labelsVisible = true;
@@ -1794,6 +1829,49 @@ const COSMIC_DATA = {
 };
 Object.assign(DATA,COSMIC_DATA);
 
+// Educational layer: expandable study notes for every selectable object.
+const EDUCATION = {
+  "Sun": {composition:"Mostly hydrogen and helium plasma, with a hot dense core and layered radiative and convective regions.", science:"Nuclear fusion converts hydrogen into helium in the core. The Sun's magnetic activity drives sunspots, flares and coronal mass ejections.", exploration:"Solar missions study the photosphere, corona, magnetic field and solar wind to understand how our star affects the space environment.", importance:"The Sun supplies nearly all of the energy driving Earth's climate system and is the gravitational center of the Solar System."},
+  "Mercury": {composition:"A dense rocky planet with a large iron-rich core, thin exosphere and heavily cratered surface.", science:"Mercury has extreme day-night temperature differences because it rotates slowly and has almost no substantial atmosphere to retain heat.", exploration:"NASA's MESSENGER mission mapped Mercury in detail; BepiColombo is studying the planet's interior, surface and magnetosphere.", importance:"Mercury helps scientists understand how small rocky planets form and evolve close to their stars."},
+  "Venus": {composition:"A rocky planet wrapped in a very thick carbon-dioxide atmosphere and sulfuric-acid cloud layers.", science:"Its powerful greenhouse effect makes the surface hotter than Mercury's despite being farther from the Sun. Venus also has intense atmospheric circulation.", exploration:"The Soviet Venera missions reached the surface, while NASA's Magellan mapped much of the planet with radar. New missions are planned to study its atmosphere and geology.", importance:"Venus is a natural laboratory for planetary climate, greenhouse warming and atmospheric evolution."},
+  "Earth": {composition:"A rocky planet with oceans, a nitrogen-oxygen atmosphere, an active crust and a global magnetic field.", science:"Plate tectonics, the water cycle, the atmosphere and the magnetosphere interact to create a dynamic habitable environment.", exploration:"Earth is continuously studied by satellites, observatories, research aircraft, ships and ground instruments.", importance:"It is currently the only world known to support life, making it the reference point for planetary habitability studies."},
+  "Mars": {composition:"A rocky world with iron-rich dust, polar ice, ancient volcanic terrain and a thin carbon-dioxide atmosphere.", science:"Evidence of ancient rivers, lakes and minerals formed in water shows that Mars once had very different surface conditions.", exploration:"Orbiters, landers and rovers such as Curiosity and Perseverance investigate geology, climate and the possibility that ancient environments could have supported microbial life.", importance:"Mars is a key target for understanding planetary evolution and for developing technologies relevant to future human exploration."},
+  "Jupiter": {composition:"A hydrogen-helium gas giant with no solid surface and a deep atmosphere organized into powerful bands and storms.", science:"Its enormous gravity and magnetic field influence the entire outer Solar System. The Great Red Spot is a long-lived atmospheric storm.", exploration:"Pioneer, Voyager, Galileo, Juno and other missions have revealed Jupiter's atmosphere, magnetosphere and moons.", importance:"Jupiter is important for studying gas-giant formation, atmospheric physics and the environments of potentially ocean-bearing moons."},
+  "Saturn": {composition:"A hydrogen-helium gas giant surrounded by an extensive system of mostly water-ice rings.", science:"Its rings are made of particles ranging from dust grains to much larger blocks. Saturn's atmosphere contains fast winds and long-lived storms.", exploration:"NASA's Cassini-Huygens mission orbited Saturn for years and delivered the Huygens probe to Titan's surface.", importance:"Saturn provides a natural laboratory for ring dynamics, gas-giant weather and icy-moon geology."},
+  "Uranus": {composition:"An ice giant rich in water, ammonia and methane ices beneath a hydrogen-helium atmosphere.", science:"Its roughly 98-degree axial tilt produces extreme seasonal illumination changes. Methane absorbs red light, giving the planet its blue-green appearance.", exploration:"Voyager 2 remains the only spacecraft to have visited Uranus closely; remote telescopes continue to monitor its atmosphere and rings.", importance:"Uranus helps scientists test models of ice-giant interiors, atmospheres and unusual planetary seasons."},
+  "Neptune": {composition:"An ice giant with a hydrogen-helium atmosphere containing methane and a deep interior rich in water-ammonia-methane materials.", science:"Neptune has some of the fastest winds measured on a planet and rapidly changing storms despite receiving little sunlight.", exploration:"Voyager 2 made the only close flyby so far, revealing storms, rings and moons including Triton.", importance:"Neptune shows how powerful atmospheric dynamics can operate far from the Sun."},
+  "Ceres": {composition:"A rocky-icy dwarf planet in the asteroid belt with evidence of hydrated minerals and bright salt deposits.", science:"Dawn found signs of past and possibly residual internal activity, including bright deposits inside Occator Crater.", exploration:"NASA's Dawn spacecraft orbited Ceres and mapped its surface, composition and gravity field.", importance:"Ceres connects the study of asteroids and planets and preserves clues about water-rich material in the early Solar System."},
+  "Pluto": {composition:"An icy dwarf planet with nitrogen, methane and carbon-monoxide ices, mountains of water ice and a thin atmosphere.", science:"Seasonal cycles can move nitrogen and other volatile ices across its surface. Sputnik Planitia is a vast basin filled with nitrogen ice.", exploration:"NASA's New Horizons performed the first close flyby in 2015 and revealed mountains, glaciers, haze layers and diverse terrain.", importance:"Pluto showed that the distant Kuiper Belt contains complex worlds with active-looking geology."},
+  "Haumea": {composition:"A rapidly rotating icy dwarf planet with an elongated shape, two known moons and a narrow ring.", science:"Its very fast rotation is thought to have been important in shaping its unusual elongated form. Its surface is rich in crystalline water ice.", exploration:"Haumea has been studied mainly with telescopes because it is extremely distant; observations of its moons and ring help estimate its physical properties.", importance:"It demonstrates the diversity of dwarf planets and how collisions can reshape small worlds."},
+  "Makemake": {composition:"A cold, methane-rich dwarf planet in the Kuiper Belt with a very distant orbit.", science:"Its surface reflects sunlight strongly because volatile ices such as methane are present. A small moon helps scientists study its mass.", exploration:"Makemake is observed with powerful ground- and space-based telescopes to measure its atmosphere, surface and satellite.", importance:"It helps scientists understand the population of large icy bodies beyond Neptune."},
+  "Eris": {composition:"A massive icy dwarf planet in the scattered disk with a highly elongated orbit and a known moon, Dysnomia.", science:"Eris helped demonstrate that Pluto is part of a larger population of distant planetary bodies and contributed to the scientific discussion surrounding dwarf planets.", exploration:"Because of its great distance, Eris is mainly studied through telescopes and measurements of its orbit, size, brightness and moon.", importance:"Eris is important for understanding the outer Solar System and the diversity of dwarf planets."},
+  "Moon": {composition:"Earth's rocky natural satellite has a differentiated interior, a cratered surface, mountains, maria and almost no atmosphere.", science:"The Moon is tidally locked, so nearly the same hemisphere faces Earth. Its gravity drives most of Earth's ocean tides.", exploration:"Apollo astronauts returned samples, while modern orbiters map the surface and measure its gravity, minerals and environment.", importance:"The Moon records billions of years of Solar System history and is a major testbed for future exploration technologies."},
+  "Io": {composition:"A rocky moon with a sulfur-rich surface and an interior strongly heated by tidal flexing.", science:"Jupiter's gravity and orbital interactions with Europa and Ganymede continually deform Io, powering extraordinary volcanism.", exploration:"Voyager and Galileo documented active volcanoes; Juno and Earth-based observatories continue monitoring its changing surface and atmosphere.", importance:"Io is a leading example of how tidal forces can power geological activity far from the Sun."},
+  "Europa": {composition:"An icy outer shell covers a rocky interior and a likely global salty ocean beneath the surface.", science:"Jupiter's tidal forces provide internal heating. Fractures and surface chemistry offer clues about the ocean below.", exploration:"Galileo studied Europa extensively. NASA's Europa Clipper is designed to investigate its ice shell, ocean-related chemistry and habitability indicators.", importance:"Europa is one of the Solar System's most important targets in the search for potentially habitable environments beyond Earth."},
+  "Ganymede": {composition:"The largest moon in the Solar System has an icy-rocky composition, layered interior and a thin atmosphere.", science:"Ganymede generates its own magnetic field, an unusual feature for a moon. Evidence also points to liquid-water layers deep inside.", exploration:"Voyager and Galileo provided major observations, while ESA's JUICE mission is studying Ganymede and the Jupiter system.", importance:"Ganymede helps scientists study magnetic fields, icy interiors and ocean worlds."},
+  "Callisto": {composition:"An ancient icy-rocky moon covered with impact craters and large multi-ring basins.", science:"Its heavily cratered surface preserves a long record of impacts. Callisto lies farther from Jupiter and experiences a different radiation environment than the inner Galilean moons.", exploration:"Voyager and Galileo spacecraft gathered detailed observations of its surface and interior clues.", importance:"Callisto provides a relatively preserved record of early Solar System bombardment and is also studied as a possible future exploration destination."},
+  "Titan": {composition:"A large icy moon with a dense nitrogen-rich atmosphere, organic chemistry and a water-ice interior.", science:"Methane acts as a working fluid in a weather cycle: it can evaporate, form clouds, rain and collect in lakes and seas.", exploration:"Cassini mapped Titan extensively and the Huygens probe landed there in 2005. NASA's Dragonfly mission is planned to explore its surface.", importance:"Titan is a unique natural laboratory for atmospheric chemistry and prebiotic organic processes."},
+  "Enceladus": {composition:"A small icy moon with a reflective surface, fractured south polar terrain and a subsurface ocean.", science:"Jets erupt from south-polar fractures and contain water-rich material plus other compounds, allowing spacecraft to sample material originating from the interior.", exploration:"Cassini repeatedly flew through the plume and used instruments to study its composition, particles and heat output.", importance:"Enceladus shows how an ocean can exist beneath ice and how plume activity can expose material from a hidden interior."},
+  "Rhea": {composition:"An icy-rocky moon with a heavily cratered surface and a thin exosphere.", science:"Its ancient terrain preserves evidence of long-term impacts. Water ice dominates much of the visible surface.", exploration:"Voyager and Cassini provided most detailed observations, including close imaging and measurements of its environment.", importance:"Rhea helps scientists compare the geology and evolution of Saturn's many icy satellites."},
+  "Triton": {composition:"A large icy moon with nitrogen, methane and water-ice materials and a thin atmosphere.", science:"Its retrograde orbit suggests it was likely captured rather than forming in place around Neptune. Seasonal heating can drive nitrogen geysers.", exploration:"Voyager 2 made the only close flyby and observed plumes, young-looking terrain and complex surface geology.", importance:"Triton may be a captured Kuiper Belt world, linking Neptune's moon system with the distant outer Solar System."},
+  "Titania": {composition:"The largest moon of Uranus is a mixture of water ice and rock with large valleys, faults and impact craters.", science:"Its surface records both ancient impacts and later tectonic activity. Its interior may contain differentiated layers.", exploration:"Voyager 2 obtained the best close-up images available; future missions would greatly improve knowledge of its geology.", importance:"Titania illustrates the diverse geological histories possible on mid-sized icy moons."},
+  "Oberon": {composition:"A dark, icy-rocky moon with many craters and bright deposits associated with some impact features.", science:"Its old surface preserves evidence of a long impact history, while some bright material may expose cleaner water ice.", exploration:"Voyager 2 provided the primary close-up observations during its 1986 Uranus encounter.", importance:"Oberon helps scientists understand the ancient surfaces of Uranus's outer moons."},
+  "AsteroidBelt": {composition:"A broad population of rocky and metallic bodies orbiting mainly between Mars and Jupiter, including dwarf planet Ceres.", science:"Jupiter's gravity prevented the material from easily assembling into a single planet. Collisions and resonances continually reshape the population.", exploration:"Astronomers use telescopes and spacecraft to measure asteroid composition, orbits and families; missions have visited several individual asteroids.", importance:"Asteroids preserve primitive material from Solar System formation and are important for planetary-defense studies."},
+  "KuiperBelt": {composition:"A distant region beyond Neptune containing icy planetesimals, dwarf planets and the source population for many short-period comets.", science:"The belt is a leftover reservoir from planetary formation. Neptune's gravity and resonances strongly influence the orbits of its objects.", exploration:"New Horizons explored Pluto and Arrokoth, giving spacecraft-level views of Kuiper Belt worlds.", importance:"The Kuiper Belt reveals how the outer Solar System formed and how small bodies evolve over billions of years."},
+  "OortCloud": {composition:"A proposed distant, roughly spherical reservoir of icy bodies surrounding the Solar System at enormous distances.", science:"Passing stars and the Galactic tidal field can disturb objects in the cloud and send some toward the inner Solar System as long-period comets.", exploration:"No spacecraft has directly visited the Oort Cloud. Its existence is inferred from the orbital distribution of long-period comets.", importance:"It provides a valuable picture of the Solar System's gravitational boundary and ancient cometary material."},
+  "Voyager1": {composition:"A robotic spacecraft powered by radioisotope thermoelectric generators, equipped with cameras, spectrometers and a high-gain antenna.", science:"Voyager 1 crossed the heliopause and entered interstellar space. Its instruments measure the local plasma, particles and magnetic environment.", exploration:"Launched in 1977, it flew past Jupiter and Saturn before continuing outward on an escape trajectory.", importance:"Voyager 1 demonstrates how long-duration spacecraft can operate far beyond the planets and return scientific data."},
+  "Voyager2": {composition:"A deep-space probe carrying scientific instruments for imaging, spectroscopy, plasma and magnetic-field measurements.", science:"It is the only spacecraft to have flown close to Jupiter, Saturn, Uranus and Neptune, using gravity assists to reshape its trajectory.", exploration:"Its 1977 launch led to a rare four-giant-planet tour, followed by entry into interstellar space in 2018.", importance:"Voyager 2 remains a landmark example of mission design, gravity assists and long-duration space science."},
+  "NewHorizons": {composition:"A compact nuclear-powered spacecraft built for fast encounters with distant icy worlds.", science:"It used a Jupiter gravity assist to increase speed and later flew past Pluto and the Kuiper Belt object Arrokoth.", exploration:"Its 2015 Pluto flyby returned the first detailed images and measurements of Pluto and its moons; it later explored Arrokoth in 2019.", importance:"New Horizons transformed knowledge of the outer Solar System by showing that distant small worlds can be geologically and chemically diverse."},
+  "Andromeda Galaxy": {composition:"A giant spiral galaxy containing hundreds of billions of stars, gas, dust and a central supermassive black hole.", science:"Its disk rotates, while star formation occurs in regions containing dense gas and dust. It belongs to the Local Group with the Milky Way.", exploration:"Astronomers study Andromeda using visible, infrared, radio and X-ray observations to map its stars and interstellar material.", importance:"It is a nearby laboratory for studying spiral galaxies and the evolution of large galactic systems."},
+  "Triangulum Galaxy": {composition:"A smaller spiral galaxy in the Local Group with a disk rich in gas and active star-forming regions.", science:"Its relatively strong star formation makes it useful for studying how gas becomes new stars in spiral galaxies.", exploration:"Telescopes across multiple wavelengths reveal its stars, nebulae, gas clouds and structure.", importance:"It provides a nearby comparison point for the Milky Way and Andromeda."},
+  "Whirlpool Galaxy": {composition:"A grand-design spiral galaxy with bright arms and a smaller companion galaxy interacting nearby.", science:"Gravitational interaction helps compress gas and dust in parts of the system, promoting star formation.", exploration:"Astronomers observe it in visible, infrared, radio and X-ray wavelengths to study stars, gas and the interaction.", importance:"It is a clear example of how gravity between galaxies can reshape structure and influence star formation."},
+  "Sombrero Galaxy": {composition:"A nearly edge-on spiral galaxy with a large central bulge and a prominent dark dust lane.", science:"Its dust disk blocks visible light along the edge, producing the characteristic sombrero appearance. Its central region contains an unusually massive black hole.", exploration:"It has been studied across the electromagnetic spectrum, including visible, infrared and radio observations.", importance:"Its geometry makes it useful for studying galaxy structure, dust and central black-hole environments."},
+  "Orion Nebula": {composition:"A glowing cloud of gas and dust containing dense molecular material and a cluster of young stars.", science:"Ultraviolet radiation from massive young stars ionizes nearby gas, making the nebula shine. New stars continue to form inside the cloud.", exploration:"Astronomers use optical, infrared and radio telescopes to see both the glowing surface and embedded young stars.", importance:"It is one of the best nearby laboratories for learning how stars and planetary systems begin."},
+  "Eagle Nebula": {composition:"A large cloud of gas and dust containing active star-forming regions and dense structures known as the Pillars of Creation.", science:"Radiation and stellar winds from young massive stars sculpt the surrounding cloud while new stars form in dense pockets.", exploration:"Space telescopes and ground observatories study its gas chemistry, dust and young stellar population.", importance:"It illustrates the feedback between newly formed stars and the clouds from which they were born."},
+  "Crab Nebula": {composition:"An expanding supernova remnant made of hot magnetized plasma, energized by a rapidly spinning neutron star.", science:"The central pulsar injects particles and magnetic energy into the expanding debris, producing radiation across many wavelengths.", exploration:"The remnant has been studied from radio waves through gamma rays, making it a major multi-wavelength astrophysics target.", importance:"It lets scientists observe the aftermath of a massive stellar explosion and the physics of pulsars."},
+  "Aurora Borealis": {composition:"A polar light phenomenon in Earth's upper atmosphere caused by energetic charged particles interacting with atmospheric gases.", science:"Particles guided by Earth's magnetic field excite oxygen and nitrogen. Different altitudes and gases produce different colors.", exploration:"Ground cameras, satellites and magnetometers monitor auroras together with solar-wind conditions.", importance:"Auroras connect solar activity, Earth's magnetosphere and atmospheric physics in one visible phenomenon."}
+};
+
 function createCard(name){
   const d = DATA[name];
   const el = document.createElement("button");
@@ -1839,6 +1917,20 @@ function showInfo(name){
   document.getElementById("factChip").textContent = "✦ " + d.fact;
   document.getElementById("classChip").textContent = d.type;
   document.getElementById("infoDot").style.background = d.color;
+
+  const edu = EDUCATION[name];
+  const educationPanel = document.getElementById("educationPanel");
+  if (edu) {
+    document.getElementById("eduComposition").textContent = edu.composition;
+    document.getElementById("eduScience").textContent = edu.science;
+    document.getElementById("eduExploration").textContent = edu.exploration;
+    document.getElementById("eduImportance").textContent = edu.importance;
+    educationPanel.classList.remove("hidden");
+    educationPanel.open = false;
+  } else {
+    educationPanel.classList.add("hidden");
+  }
+
   document.getElementById("infoPanel").classList.remove("hidden");
   document.querySelectorAll(".planet-card").forEach(x => x.classList.toggle("active", x.dataset.name === name));
 }
@@ -1950,6 +2042,7 @@ const clock = new THREE.Clock();
 
 function animate() {
   requestAnimationFrame(animate);
+if(window.__svGraphicsTick) window.__svGraphicsTick(performance.now());
   if(window.__svRealismTick) window.__svRealismTick(performance.now());
   const dt = clock.getDelta();
 
@@ -2313,21 +2406,32 @@ focusName("Earth");
 })();
 </script>
 
-<script id="spaceview-realism-v8-js">
+<script id="spaceview-realism-v15-js">
 /* =========================================================
-   SPACEVIEW V8 — REALISM PASS
-   Uses public Three.js example planet textures as visual
-   references/educational assets. Procedural fallback remains.
+   SPACEVIEW V15 — REALISTIC TEXTURE PASS
+   - Official Three.js planet textures where available
+   - Unique procedural textures for every dwarf world + moon
+   - Detailed spacecraft materials / solar panels
+   - Earth clouds + atmosphere
+   - Keeps everything inside the single-file project
    ========================================================= */
 (function(){
   if(typeof THREE==='undefined') return;
 
-  const TEX='https://threejs.org/examples/textures/planets/';
-  const loader=new THREE.TextureLoader();
+  const loader = new THREE.TextureLoader();
   loader.setCrossOrigin('anonymous');
 
-  const textureMap={
-    Sun:'sun.jpg',
+  function finishTexture(tex){
+    if(!tex) return tex;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  /* Official Three.js example planet maps. If a remote asset fails,
+     the detailed procedural texture already assigned to the object remains. */
+  const official = {
     Mercury:'mercury.jpg',
     Venus:'venus.jpg',
     Earth:'earth_atmos_2048.jpg',
@@ -2336,60 +2440,172 @@ focusName("Earth");
     Saturn:'saturn.jpg',
     Uranus:'uranus.jpg',
     Neptune:'neptune.jpg',
-    Moon:'moon_1024.jpg',
-    Io:'jupiter.jpg',
-    Europa:'moon_1024.jpg',
-    Ganymede:'moon_1024.jpg',
-    Callisto:'moon_1024.jpg',
-    Titan:'moon_1024.jpg',
-    Enceladus:'moon_1024.jpg',
-    Rhea:'moon_1024.jpg',
-    Triton:'moon_1024.jpg',
-    Titania:'moon_1024.jpg',
-    Oberon:'moon_1024.jpg'
+    Moon:'moon_1024.jpg'
   };
+  const TEX_BASE='https://threejs.org/examples/textures/planets/';
 
-  function load(url,cb){
-    loader.load(TEX+url, t=>{
-      t.colorSpace=THREE.SRGBColorSpace;
-      cb(t);
-    },undefined,()=>{});
+  function loadOfficial(name, file){
+    const mesh = window.meshes && window.meshes.find(m=>m.name===name);
+    if(!mesh || !mesh.material || !mesh.material.isMeshStandardMaterial) return;
+    loader.load(TEX_BASE+file, tex=>{
+      mesh.material.map=finishTexture(tex);
+      mesh.material.needsUpdate=true;
+    }, undefined, ()=>{});
+  }
+  Object.entries(official).forEach(([name,file])=>loadOfficial(name,file));
+
+  /* Deterministic texture generator — no random flicker on reload. */
+  function hashSeed(str){
+    let h=2166136261;
+    for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}
+    return h>>>0;
+  }
+  function rand(seed){
+    seed.value=(Math.imul(seed.value,1664525)+1013904223)>>>0;
+    return seed.value/4294967296;
+  }
+  function hexToRgb(hex){
+    return {
+      r:(hex>>16)&255,
+      g:(hex>>8)&255,
+      b:hex&255
+    };
   }
 
-  /* Replace generated planet maps with real spherical texture maps. */
-  if(window.meshes && Array.isArray(window.meshes)){
-    window.meshes.forEach(m=>{
-      const name=m.name;
-      if(!textureMap[name] || !m.material || !m.material.isMeshStandardMaterial) return;
-      load(textureMap[name],tex=>{
-        m.material.map=tex;
-        m.material.needsUpdate=true;
-      });
+  function detailedRockTexture(name, baseHex, secondaryHex, style='rock'){
+    const W=1024,H=512;
+    const c=document.createElement('canvas'); c.width=W;c.height=H;
+    const ctx=c.getContext('2d');
+    const base=hexToRgb(baseHex), sec=hexToRgb(secondaryHex);
+    const seed={value:hashSeed(name)};
+    const img=ctx.createImageData(W,H);
+
+    /* Multi-frequency color noise gives the sphere a less flat surface. */
+    for(let y=0;y<H;y++){
+      for(let x=0;x<W;x++){
+        const u=x/W, v=y/H;
+        const n1=Math.sin((u*17.0+v*7.0)*Math.PI*2);
+        const n2=Math.sin((u*47.0-v*23.0)*Math.PI*2);
+        const n3=Math.sin((u*103.0+v*71.0)*Math.PI*2);
+        const wave=(n1*.50+n2*.28+n3*.12+.62)/1.52;
+        let k=.72+wave*.34;
+        if(style==='ice') k=.82+wave*.22;
+        if(style==='dark') k=.58+wave*.38;
+        const i=(y*W+x)*4;
+        img.data[i]=Math.max(0,Math.min(255,base.r*k + sec.r*(1-k)*.34));
+        img.data[i+1]=Math.max(0,Math.min(255,base.g*k + sec.g*(1-k)*.34));
+        img.data[i+2]=Math.max(0,Math.min(255,base.b*k + sec.b*(1-k)*.34));
+        img.data[i+3]=255;
+      }
+    }
+    ctx.putImageData(img,0,0);
+
+    /* Bands / streaks for gas-rich or icy worlds. */
+    if(style==='banded'){
+      for(let i=0;i<15;i++){
+        const y=20+rand(seed)*(H-40);
+        const hh=4+rand(seed)*18;
+        ctx.fillStyle=`rgba(${sec.r},${sec.g},${sec.b},${.08+rand(seed)*.13})`;
+        ctx.fillRect(0,y,W,hh);
+      }
+    }
+
+    /* Craters and surface scars. */
+    if(style!=='gas'){
+      const count=style==='ice'?38:62;
+      for(let i=0;i<count;i++){
+        const x=rand(seed)*W, y=rand(seed)*H;
+        const r=2+Math.pow(rand(seed),.55)*(style==='dark'?28:20);
+        ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(0,0,0,${.08+rand(seed)*.18})`;ctx.fill();
+        ctx.beginPath();ctx.arc(x-r*.18,y-r*.2,r*.72,0,Math.PI*2);
+        ctx.strokeStyle=`rgba(255,255,255,${.05+rand(seed)*.12})`;
+        ctx.lineWidth=Math.max(1,r*.055);ctx.stroke();
+      }
+    }
+
+    /* Polar ice caps for Mars-like bodies. */
+    if(style==='mars'){
+      const g=ctx.createLinearGradient(0,0,0,75);
+      g.addColorStop(0,'rgba(245,245,235,.92)');g.addColorStop(1,'rgba(245,245,235,0)');
+      ctx.fillStyle=g;ctx.fillRect(0,0,W,75);
+      const g2=ctx.createLinearGradient(0,H,0,H-60);
+      g2.addColorStop(0,'rgba(245,245,235,.78)');g2.addColorStop(1,'rgba(245,245,235,0)');
+      ctx.fillStyle=g2;ctx.fillRect(0,H-75,W,75);
+    }
+
+    const tex=new THREE.CanvasTexture(c);
+    return finishTexture(tex);
+  }
+
+  const specialTextures = {
+    Ceres:detailedRockTexture('Ceres',0x5c6062,0x9a9b91,'dark'),
+    Pluto:detailedRockTexture('Pluto',0x8b7665,0xc9b9a6,'ice'),
+    Haumea:detailedRockTexture('Haumea',0xb9c6cf,0x71808a,'ice'),
+    Makemake:detailedRockTexture('Makemake',0x9a3f2e,0xe0a05f,'ice'),
+    Eris:detailedRockTexture('Eris',0x7c858d,0xd9e1e6,'ice'),
+
+    Io:detailedRockTexture('Io',0xb77a2c,0xf0d77d,'rock'),
+    Europa:detailedRockTexture('Europa',0xbab6a8,0x5d514b,'ice'),
+    Ganymede:detailedRockTexture('Ganymede',0x6f665c,0xc1b7a1,'rock'),
+    Callisto:detailedRockTexture('Callisto',0x403c3a,0x81786d,'dark'),
+    Titan:detailedRockTexture('Titan',0x9c713d,0xd7a85b,'ice'),
+    Enceladus:detailedRockTexture('Enceladus',0xd8d8d1,0x7d8790,'ice'),
+    Rhea:detailedRockTexture('Rhea',0xa7aaa9,0x62676c,'ice'),
+    Triton:detailedRockTexture('Triton',0x9da6a6,0x5e6872,'ice'),
+    Titania:detailedRockTexture('Titania',0x9a9da0,0x565c61,'ice'),
+    Oberon:detailedRockTexture('Oberon',0x686b6e,0x383b3f,'dark')
+  };
+
+  if(window.meshes){
+    window.meshes.forEach(mesh=>{
+      const tex=specialTextures[mesh.name];
+      if(tex && mesh.material && mesh.material.isMeshStandardMaterial){
+        mesh.material.map=tex;
+        mesh.material.roughness=mesh.name==='Haumea'?.58:.86;
+        mesh.material.metalness=.015;
+        mesh.material.needsUpdate=true;
+      }
     });
   }
 
-  /* Earth cloud shell: restrained, thin, slowly rotating. */
-  let earth=null;
-  if(window.meshes) earth=window.meshes.find(m=>m.name==='Earth');
+  /* Moon Explorer meshes are created by createMoon(), so apply their
+     unique maps after creation and also cover any later-created moons. */
+  function applyMoonTextures(){
+    if(!window.moonMeshes) return;
+    window.moonMeshes.forEach(mesh=>{
+      const tex=specialTextures[mesh.name];
+      if(tex && mesh.material && mesh.material.isMeshStandardMaterial){
+        mesh.material.map=tex;
+        mesh.material.roughness=.88;
+        mesh.material.needsUpdate=true;
+      }
+    });
+  }
+  applyMoonTextures();
+  setTimeout(applyMoonTextures,600);
+  setTimeout(applyMoonTextures,1600);
+
+  /* Earth: clouds + thin blue atmospheric rim. */
+  const earth=window.meshes && window.meshes.find(m=>m.name==='Earth');
   if(earth){
-    load('earth_clouds_1024.png',cloudTex=>{
+    loader.load(TEX_BASE+'earth_clouds_1024.png',tex=>{
       const cloud=new THREE.Mesh(
         new THREE.SphereGeometry(earth.userData.r*1.012,64,64),
         new THREE.MeshPhongMaterial({
-          map:cloudTex,transparent:true,opacity:.42,depthWrite:false,
-          blending:THREE.NormalBlending
+          map:finishTexture(tex),transparent:true,opacity:.44,
+          depthWrite:false
         })
       );
       cloud.name='Earth Cloud Layer';
       earth.add(cloud);
       window.__svEarthClouds=cloud;
-    });
+    },undefined,()=>{});
 
-    /* thin atmosphere shell with Fresnel-like rim approximation */
     const atmoMat=new THREE.ShaderMaterial({
       transparent:true,side:THREE.BackSide,depthWrite:false,
       blending:THREE.AdditiveBlending,
-      uniforms:{c:{value:new THREE.Color(0x63b3ff)},p:{value:3.2},o:{value:.16}},
+      uniforms:{c:{value:new THREE.Color(0x5dbdff)},p:{value:3.1},o:{value:.17}},
       vertexShader:`
         varying vec3 vN; varying vec3 vV;
         void main(){
@@ -2406,40 +2622,101 @@ focusName("Earth");
           gl_FragColor=vec4(c,rim*o);
         }`
     });
-    const atmo=new THREE.Mesh(new THREE.SphereGeometry(earth.userData.r*1.055,64,64),atmoMat);
+    const atmo=new THREE.Mesh(
+      new THREE.SphereGeometry(earth.userData.r*1.055,64,64),atmoMat
+    );
     atmo.name='Earth Atmosphere';
     earth.add(atmo);
   }
 
-  /* Saturn ring texture if Saturn exists. */
+  /* Saturn's ring gets a sharper official alpha map when available. */
   const sat=window.meshes && window.meshes.find(m=>m.name==='Saturn');
   if(sat){
-    const ring=sat.children.find(x=>x.name!=='');
-    load('saturn_ring_alpha.png',tex=>{
+    loader.load(TEX_BASE+'saturn_ring_alpha.png',tex=>{
       sat.traverse(o=>{
         if(o.isMesh && o.geometry && o.geometry.type==='RingGeometry'){
-          o.material.map=tex;
+          o.material.map=finishTexture(tex);
           o.material.transparent=true;
-          o.material.opacity=.92;
+          o.material.opacity=.93;
+          o.material.needsUpdate=true;
+        }
+      });
+    },undefined,()=>{});
+  }
+
+  /* Spacecraft: metallic body + thermal foil + high-contrast solar-cell texture. */
+  function panelTexture(name){
+    const c=document.createElement('canvas');c.width=512;c.height=256;
+    const x=c.getContext('2d');
+    x.fillStyle='#07132d';x.fillRect(0,0,512,256);
+    for(let i=0;i<16;i++){
+      x.fillStyle=i%2?'#123d72':'#0a274e';
+      x.fillRect(i*32,0,30,256);
+      x.strokeStyle='rgba(120,210,255,.35)';x.lineWidth=1;
+      x.beginPath();x.moveTo(i*32+30,0);x.lineTo(i*32+30,256);x.stroke();
+    }
+    for(let y=12;y<256;y+=32){
+      x.strokeStyle='rgba(180,230,255,.24)';x.beginPath();x.moveTo(0,y);x.lineTo(512,y);x.stroke();
+    }
+    x.fillStyle='rgba(255,255,255,.16)';x.fillRect(0,0,512,5);
+    return finishTexture(new THREE.CanvasTexture(c));
+  }
+  function bodyTexture(name){
+    const c=document.createElement('canvas');c.width=512;c.height=256;
+    const x=c.getContext('2d');
+    const g=x.createLinearGradient(0,0,512,256);
+    g.addColorStop(0,'#f3e8c8');g.addColorStop(.42,'#c9b88f');g.addColorStop(.7,'#7b705d');g.addColorStop(1,'#24282d');
+    x.fillStyle=g;x.fillRect(0,0,512,256);
+    x.strokeStyle='rgba(30,30,30,.55)';x.lineWidth=3;
+    for(let y=18;y<256;y+=38){x.beginPath();x.moveTo(0,y);x.lineTo(512,y);x.stroke();}
+    x.fillStyle='rgba(255,255,255,.28)';
+    for(let i=0;i<24;i++)x.fillRect((i*47)%500,30+(i*31)%210,12,5);
+    x.fillStyle='#111827';x.fillRect(205,82,100,72);
+    x.fillStyle='#d9e6ef';x.fillRect(218,94,74,48);
+    x.fillStyle='rgba(30,100,150,.45)';x.fillRect(225,101,60,34);
+    return finishTexture(new THREE.CanvasTexture(c));
+  }
+  const pTex={body:{},panel:{}};
+  ['Voyager1','Voyager2','NewHorizons'].forEach(n=>{
+    pTex.body[n]=bodyTexture(n);pTex.panel[n]=panelTexture(n);
+  });
+
+  if(window.spacecraftMeshes){
+    Object.entries(window.spacecraftMeshes).forEach(([name,g])=>{
+      g.traverse(o=>{
+        if(!o.isMesh || !o.material) return;
+        if(o.geometry && o.geometry.type==='BoxGeometry'){
+          const size=o.geometry.parameters||{};
+          if(size.z && size.z<.2){
+            o.material.map=pTex.panel[name];
+            o.material.color.set(0xffffff);
+            o.material.metalness=.35;o.material.roughness=.48;
+          }else{
+            o.material.map=pTex.body[name];
+            o.material.color.set(0xffffff);
+            o.material.metalness=.58;o.material.roughness=.36;
+          }
+          o.material.needsUpdate=true;
+        }else if(o.geometry && o.geometry.type==='CylinderGeometry'){
+          o.material.color.set(0xe9e4d4);
+          o.material.metalness=.65;o.material.roughness=.3;
           o.material.needsUpdate=true;
         }
       });
     });
   }
 
-  /* Hide the old oversized procedural galaxy/nebula groups. */
+  /* Keep the distant universe photographic-looking and subtle. */
   if(window.galaxyGroup) window.galaxyGroup.visible=false;
   if(window.nebulaGroup) window.nebulaGroup.visible=false;
 
-  /* Small, distant galaxy/nebula photographic-style sprites. */
   function radialTexture(kind){
-    const c=document.createElement('canvas'); c.width=512;c.height=512;
-    const x=c.getContext('2d'),cx=256,cy=256;
-    x.clearRect(0,0,512,512);
+    const c=document.createElement('canvas');c.width=512;c.height=512;
+    const x=c.getContext('2d'),cx=256,cy=256;x.clearRect(0,0,512,512);
     if(kind==='galaxy'){
       const g=x.createRadialGradient(cx,cy,5,cx,cy,220);
-      g.addColorStop(0,'rgba(255,245,220,.92)');
-      g.addColorStop(.10,'rgba(255,210,150,.48)');
+      g.addColorStop(0,'rgba(255,245,220,.95)');
+      g.addColorStop(.12,'rgba(255,210,150,.48)');
       g.addColorStop(.34,'rgba(180,150,255,.20)');
       g.addColorStop(.68,'rgba(90,120,255,.055)');
       g.addColorStop(1,'rgba(0,0,0,0)');
@@ -2448,7 +2725,7 @@ focusName("Earth");
       for(let arm=0;arm<2;arm++){
         x.beginPath();
         for(let t=0;t<Math.PI*4.5;t+=.035){
-          const r=8+t*7.2, a=t+(arm*Math.PI);
+          const r=8+t*7.2,a=t+arm*Math.PI;
           const px=Math.cos(a)*r,py=Math.sin(a)*r*.34;
           if(t===0)x.moveTo(px,py);else x.lineTo(px,py);
         }
@@ -2463,13 +2740,12 @@ focusName("Earth");
       g.addColorStop(1,'rgba(0,0,0,0)');
       x.fillStyle=g;x.fillRect(0,0,512,512);
     }
-    return new THREE.CanvasTexture(c);
+    return finishTexture(new THREE.CanvasTexture(c));
   }
 
   const deepObjects=new THREE.Group();
-  deepObjects.name='Deep Space Objects — restrained';
+  deepObjects.name='Deep Space Objects — textured';
   scene.add(deepObjects);
-
   const defs=[
     ['Andromeda',new THREE.Vector3(-12000,4200,-18500),1.0,.48],
     ['Triangulum',new THREE.Vector3(15000,-3200,-24000),.62,.34],
@@ -2479,8 +2755,8 @@ focusName("Earth");
     ['Eagle Nebula',new THREE.Vector3(-9200,4800,-16000),.95,.15],
     ['Carina Nebula',new THREE.Vector3(11200,-5200,15000),1.2,.13]
   ];
-  defs.forEach((d,i)=>{
-    const isG=d[0].includes('Nebula')===false;
+  defs.forEach(d=>{
+    const isG=!d[0].includes('Nebula');
     const spr=new THREE.Sprite(new THREE.SpriteMaterial({
       map:radialTexture(isG?'galaxy':'nebula'),
       transparent:true,opacity:d[3],depthWrite:false,blending:THREE.AdditiveBlending
@@ -2492,35 +2768,252 @@ focusName("Earth");
     deepObjects.add(spr);
   });
 
-  /* Milky Way: very subtle broad dust/stars band, not a neon ribbon. */
   const mwCanvas=document.createElement('canvas');mwCanvas.width=2048;mwCanvas.height=512;
-  const mx=mwCanvas.getContext('2d');
-  mx.clearRect(0,0,2048,512);
+  const mx=mwCanvas.getContext('2d');mx.clearRect(0,0,2048,512);
   for(let i=0;i<13000;i++){
-    const px=Math.random()*2048;
-    const band=Math.exp(-Math.pow((Math.random()*2-1)*2.7,2));
+    const px=Math.random()*2048, band=Math.exp(-Math.pow((Math.random()*2-1)*2.7,2));
     const py=256+(Math.random()-.5)*230*band;
-    const a=.015+Math.random()*.12*band;
-    const r=Math.random()<.92?.45:1.2;
+    const a=.015+Math.random()*.12*band,r=Math.random()<.92?.45:1.2;
     mx.fillStyle=`rgba(${170+Math.random()*85},${180+Math.random()*60},${210+Math.random()*45},${a})`;
     mx.beginPath();mx.arc(px,py,r,0,Math.PI*2);mx.fill();
   }
-  const mwTex=new THREE.CanvasTexture(mwCanvas);
   const mw=new THREE.Sprite(new THREE.SpriteMaterial({
-    map:mwTex,transparent:true,opacity:.48,depthWrite:false,blending:THREE.AdditiveBlending
+    map:finishTexture(new THREE.CanvasTexture(mwCanvas)),transparent:true,
+    opacity:.48,depthWrite:false,blending:THREE.AdditiveBlending
   }));
-  mw.scale.set(36000,9000,1);
-  mw.position.set(0,2600,-18000);
-  scene.add(mw);
+  mw.scale.set(36000,9000,1);mw.position.set(0,2600,-18000);scene.add(mw);
 
   window.__svDeepObjects=deepObjects;
   window.__svMilkyWay=mw;
-
-  /* Slow, barely perceptible cosmic drift. */
   window.__svRealismTick=function(t){
     if(window.__svEarthClouds) window.__svEarthClouds.rotation.y += .00022;
     if(window.__svMilkyWay) window.__svMilkyWay.material.opacity=.43+Math.sin(t*.00012)*.025;
     if(window.__svDeepObjects) window.__svDeepObjects.rotation.y=t*.000004;
+  };
+})();
+</script>
+
+
+<script id="spaceview-graphics-v16-js">
+/* SPACEVIEW V16 — GRAPHICS MODE
+   Real map + normal/specular materials, richer lighting, atmospheric
+   scattering-style rims, sun surface animation and cinematic star glow. */
+(function(){
+  if(typeof THREE==='undefined') return;
+
+  const loader=new THREE.TextureLoader();
+  loader.setCrossOrigin('anonymous');
+  const BASE='https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/textures/planets/';
+
+  function prep(tex){
+    if(!tex) return tex;
+    if('encoding' in tex) tex.encoding=THREE.sRGBEncoding;
+    if('colorSpace' in tex) tex.colorSpace=THREE.SRGBColorSpace;
+    if(window.renderer && renderer.capabilities) tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+    tex.needsUpdate=true;
+    return tex;
+  }
+  function load(url,ok){loader.load(url,ok,undefined,()=>{});}
+
+  /* Use actual planet maps instead of flat procedural color wherever the
+     Three.js r128 planet assets are available. */
+  const maps={
+    Mercury:{map:'mercury.jpg'},
+    Venus:{map:'venus.jpg'},
+    Earth:{
+      map:'earth_atmos_2048.jpg',
+      normal:'earth_normal_2048.jpg',
+      specular:'earth_specular_2048.jpg'
+    },
+    Mars:{map:'mars_1k_color.jpg'},
+    Jupiter:{map:'jupiter.jpg'},
+    Saturn:{map:'saturn.jpg'},
+    Uranus:{map:'uranus.jpg'},
+    Neptune:{map:'neptune.jpg'},
+    Moon:{map:'moon_1024.jpg'}
+  };
+
+  function planetMaterial(name){
+    const m=window.meshes && window.meshes.find(x=>x.name===name);
+    if(!m || !m.material) return;
+    const d=maps[name]; if(!d) return;
+
+    load(BASE+d.map,tex=>{
+      const mat=new THREE.MeshPhongMaterial({
+        map:prep(tex),
+        shininess:name==='Earth'?18:(name==='Jupiter'||name==='Saturn'?7:3),
+        specular:name==='Earth'?0x88aaff:0x222222
+      });
+      if(d.normal){
+        load(BASE+d.normal,n=>{
+          mat.normalMap=prep(n);
+          mat.normalScale=new THREE.Vector2(.65,.65);
+          mat.needsUpdate=true;
+        });
+      }
+      if(d.specular){
+        load(BASE+d.specular,s=>{
+          mat.specularMap=prep(s);
+          mat.needsUpdate=true;
+        });
+      }
+      m.material.dispose();
+      m.material=mat;
+    });
+  }
+  Object.keys(maps).forEach(planetMaterial);
+
+  /* Real moon material for Earth's Moon. */
+  if(window.moonMeshes){
+    window.moonMeshes.forEach(m=>{
+      if(m.name==='Moon'){
+        load(BASE+'moon_1024.jpg',tex=>{
+          m.material=new THREE.MeshPhongMaterial({
+            map:prep(tex),shininess:2,specular:0x111111
+          });
+        });
+      }
+    });
+  }
+
+  /* Atmospheric graphics — brighter rim only on worlds where it is visually useful. */
+  function atmosphere(body, color, scale, opacity){
+    if(!body || body.getObjectByName(body.name+' Graphic Atmosphere')) return;
+    const r=body.userData.r;
+    if(!r) return;
+    const mat=new THREE.ShaderMaterial({
+      transparent:true,side:THREE.BackSide,depthWrite:false,
+      blending:THREE.AdditiveBlending,
+      uniforms:{
+        glowColor:{value:new THREE.Color(color)},
+        strength:{value:opacity}
+      },
+      vertexShader:`
+        varying vec3 vNormal;
+        varying vec3 vView;
+        void main(){
+          vec4 mv=modelViewMatrix*vec4(position,1.0);
+          vNormal=normalize(normalMatrix*normal);
+          vView=normalize(-mv.xyz);
+          gl_Position=projectionMatrix*mv;
+        }`,
+      fragmentShader:`
+        uniform vec3 glowColor;
+        uniform float strength;
+        varying vec3 vNormal;
+        varying vec3 vView;
+        void main(){
+          float rim=pow(1.0-max(dot(vNormal,vView),0.0),3.0);
+          gl_FragColor=vec4(glowColor,rim*strength);
+        }`
+    });
+    const a=new THREE.Mesh(new THREE.SphereGeometry(r*scale,64,64),mat);
+    a.name=body.name+' Graphic Atmosphere';
+    body.add(a);
+  }
+
+  const earth=window.meshes && window.meshes.find(x=>x.name==='Earth');
+  const venus=window.meshes && window.meshes.find(x=>x.name==='Venus');
+  const mars=window.meshes && window.meshes.find(x=>x.name==='Mars');
+  const jupiter=window.meshes && window.meshes.find(x=>x.name==='Jupiter');
+  const saturn=window.meshes && window.meshes.find(x=>x.name==='Saturn');
+  const uranus=window.meshes && window.meshes.find(x=>x.name==='Uranus');
+  const neptune=window.meshes && window.meshes.find(x=>x.name==='Neptune');
+  atmosphere(earth,0x58b9ff,1.055,.22);
+  atmosphere(venus,0xffc77a,1.045,.09);
+  atmosphere(mars,0xff8b62,1.035,.06);
+  atmosphere(jupiter,0xffd49a,1.025,.045);
+  atmosphere(saturn,0xffe2b0,1.025,.04);
+  atmosphere(uranus,0x73e7ff,1.045,.08);
+  atmosphere(neptune,0x4f8dff,1.045,.10);
+
+  /* Saturn ring graphics: layered rings give a much more photographic silhouette. */
+  if(saturn && !saturn.getObjectByName('Graphic Ring Layers')){
+    const rg=new THREE.Group();rg.name='Graphic Ring Layers';
+    const layers=[
+      [1.30,1.48,0xc7bba4,.72],
+      [1.50,1.74,0x9f957f,.88],
+      [1.76,1.94,0xd9cfb8,.64],
+      [1.96,2.30,0x827a6d,.50]
+    ];
+    layers.forEach((v,i)=>{
+      const g=new THREE.RingGeometry(saturn.userData.r*v[0],saturn.userData.r*v[1],192);
+      const mat=new THREE.MeshStandardMaterial({
+        color:v[2],side:THREE.DoubleSide,transparent:true,opacity:v[3],
+        roughness:.9,metalness:.02
+      });
+      const ring=new THREE.Mesh(g,mat);
+      ring.rotation.x=Math.PI/2.25;
+      rg.add(ring);
+    });
+    rg.scale.setScalar(1.0);
+    saturn.add(rg);
+  }
+
+  /* Animated sun surface: layered additive spheres + moving granulation texture. */
+  const sun=window.sun || (typeof scene!=='undefined' ? scene.getObjectByName('Sun') : null);
+  if(sun && !sun.userData.graphicsV16){
+    sun.userData.graphicsV16=true;
+    const group=sun.parent;
+    const core=new THREE.Mesh(
+      new THREE.SphereGeometry(10.56,96,96),
+      new THREE.ShaderMaterial({
+        uniforms:{time:{value:0}},
+        vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+        fragmentShader:`
+          uniform float time; varying vec2 vUv;
+          float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+          float noise(vec2 p){
+            vec2 i=floor(p),f=fract(p);
+            f=f*f*(3.0-2.0*f);
+            float a=hash(i),b=hash(i+vec2(1,0)),c=hash(i+vec2(0,1)),d=hash(i+vec2(1,1));
+            return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);
+          }
+          void main(){
+            vec2 uv=vUv*8.0;
+            float n=noise(uv+vec2(time*.08,-time*.04));
+            n+=.5*noise(uv*2.7-vec2(time*.04));
+            vec3 col=mix(vec3(1.0,.24,.015),vec3(1.0,.82,.20),n);
+            float hot=smoothstep(.55,.95,n);
+            col+=vec3(1.0,.45,.05)*hot*.28;
+            gl_FragColor=vec4(col,1.0);
+          }`
+      })
+    );
+    core.name='Sun Graphic Surface';
+    group.add(core);
+
+    const glowMat=new THREE.SpriteMaterial({
+      map:(function(){
+        const c=document.createElement('canvas');c.width=256;c.height=256;
+        const x=c.getContext('2d'),g=x.createRadialGradient(128,128,12,128,128,125);
+        g.addColorStop(0,'rgba(255,245,180,.85)');
+        g.addColorStop(.22,'rgba(255,190,50,.40)');
+        g.addColorStop(.55,'rgba(255,120,20,.13)');
+        g.addColorStop(1,'rgba(255,70,0,0)');
+        x.fillStyle=g;x.fillRect(0,0,256,256);
+        return new THREE.CanvasTexture(c);
+      })(),
+      transparent:true,depthWrite:false,blending:THREE.AdditiveBlending
+    });
+    const glow=new THREE.Sprite(glowMat);glow.name='Sun Graphic Glow';glow.scale.set(58,58,1);group.add(glow);
+    sun.userData.graphicsCore=core;
+  }
+
+  /* Cinematic point-light setup improves depth on the textured bodies. */
+  if(typeof scene!=='undefined' && !scene.getObjectByName('SpaceView Graphic Fill')){
+    const fill=new THREE.HemisphereLight(0x9bc5ff,0x080a12,.16);
+    fill.name='SpaceView Graphic Fill';scene.add(fill);
+  }
+
+  window.__svGraphicsTick=function(t){
+    if(sun && sun.userData.graphicsCore){
+      sun.userData.graphicsCore.material.uniforms.time.value=t*.00035;
+      sun.userData.graphicsCore.rotation.y=t*.000015;
+    }
+    if(earth){
+      earth.rotation.y+=.00012;
+    }
   };
 })();
 </script>
