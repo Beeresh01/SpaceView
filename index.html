@@ -92,6 +92,23 @@
     z-index:35;width:min(520px,calc(100vw - 32px));
   }
 </style>
+
+<style id="spaceview-v11-css">
+  .sv-search {position:fixed;left:14px;top:90px;width:290px;z-index:25}
+  .sv-search input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);outline:none;color:#fff;border-radius:10px;padding:9px 12px;font-size:12px}
+  .sv-search-results{max-height:280px;overflow:auto;margin-top:6px}
+  .sv-result{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);background:transparent;color:#dbeafe;font-size:11px;cursor:pointer}
+  .sv-result:hover{background:rgba(103,232,249,.10)}
+  .sv-kbd{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:#64748b;border:1px solid rgba(255,255,255,.12);padding:2px 5px;border-radius:5px}
+  .sv-fact{position:fixed;left:14px;bottom:125px;width:290px;z-index:24}
+  .sv-fact-text{font-size:11px;line-height:1.55;color:#cbd5e1}
+  .sv-progress{height:5px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}.sv-progress>span{display:block;height:100%;width:0;background:#67e8f9;transition:.4s}
+  .sv-mission{position:fixed;left:50%;top:82px;transform:translateX(-50%);width:min(430px,calc(100vw - 28px));z-index:24}
+  .sv-ach{position:fixed;right:14px;bottom:125px;width:250px;z-index:24}
+  .sv-toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(15px);z-index:50;opacity:0;transition:.25s;pointer-events:none}
+  .sv-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media(max-width:900px){.sv-search{top:145px;left:10px;width:240px}.sv-fact,.sv-ach{display:none}.sv-mission{top:150px}}
+</style>
 </head>
 <body>
 
@@ -176,12 +193,13 @@
       <div class="stat rounded-xl p-2.5"><div class="text-[10px] text-slate-500">Diameter</div><div id="diameter" class="text-xs font-bold mt-0.5"></div></div>
       <div class="stat rounded-xl p-2.5"><div class="text-[10px] text-slate-500">Orbital period</div><div id="orbit" class="text-xs font-bold mt-0.5"></div></div>
       <div class="stat rounded-xl p-2.5"><div class="text-[10px] text-slate-500">Distance</div><div id="distance" class="text-xs font-bold mt-0.5"></div></div>
-      <div class="stat rounded-xl p-2.5"><div class="text-[10px] text-slate-500">Moons</div><div id="moons" class="text-xs font-bold mt-0.5"></div></div>
+      <div class="stat rounded-xl p-2.5"><div class="text-[10px] text-slate-500">Known moons</div><div id="moons" class="text-xs font-bold mt-0.5"></div></div>
     </div>
     <div class="grid grid-cols-2 gap-2 mt-2">
       <div class="stat rounded-xl p-2.5"><div class="text-[10px] text-slate-500">Temperature</div><div id="temperature" class="text-xs font-bold mt-0.5"></div></div>
       <div class="stat rounded-xl p-2.5"><div class="text-[10px] text-slate-500">Age / Mission</div><div id="age" class="text-xs font-bold mt-0.5"></div></div>
     </div>
+    <div class="text-[9px] text-slate-500 mt-2">Moon counts can change as new planetary satellites are confirmed.</div>
     <div class="mt-3 flex flex-wrap gap-2">
       <span id="factChip" class="chip"></span>
       <span id="classChip" class="chip"></span>
@@ -196,6 +214,7 @@
       <button class="btn explorer-tab" data-tab="dwarfs">◈ Dwarf Worlds</button>
       <button class="btn explorer-tab" data-tab="regions">◌ Regions</button>
       <button class="btn explorer-tab" data-tab="missions">🚀 Spacecraft</button>
+      <button class="btn explorer-tab" data-tab="moons">🌙 Moons</button>
     </div>
   </div>
 
@@ -228,22 +247,68 @@
   </div>
 </div>
 
+
+<!-- SpaceView 1.1 enhancements -->
+<div class="sv-search glass rounded-2xl p-2 interactive">
+  <div class="flex items-center justify-between px-1 pb-1.5">
+    <span class="text-[9px] uppercase tracking-[.18em] text-slate-500">Deep Space Search</span>
+    <span class="sv-kbd">/</span>
+  </div>
+  <input id="svSearch" placeholder="Search planets, regions, missions..." autocomplete="off">
+  <div id="svResults" class="sv-search-results hidden"></div>
+</div>
+
+<div class="sv-fact glass rounded-2xl p-3 interactive">
+  <div class="flex items-center justify-between mb-1.5">
+    <span class="text-[9px] uppercase tracking-[.18em] text-amber-300">✦ Space Fact</span>
+    <button id="svNewFact" class="btn py-1 px-2">New</button>
+  </div>
+  <div id="svFactText" class="sv-fact-text"></div>
+</div>
+
+<div class="sv-mission glass rounded-2xl p-3 interactive hidden" id="svMission">
+  <div class="flex items-center justify-between">
+    <div><div class="text-[9px] uppercase tracking-[.18em] text-purple-300">Mission Control</div><div id="svMissionTitle" class="text-sm font-bold mt-1">Explorer Mission</div></div>
+    <button id="svCloseMission" class="text-slate-500 hover:text-white">&times;</button>
+  </div>
+  <div id="svMissionText" class="text-[11px] text-slate-300 mt-2"></div>
+  <div class="sv-progress mt-3"><span id="svMissionBar"></span></div>
+  <div id="svMissionStep" class="text-[10px] text-slate-500 mt-1"></div>
+</div>
+
+<div class="sv-ach glass rounded-2xl p-3 interactive">
+  <div class="flex items-center justify-between mb-2"><span class="text-[9px] uppercase tracking-[.18em] text-emerald-300">Achievements</span><span id="svXP" class="text-[10px] font-mono text-amber-300">0 XP</span></div>
+  <div id="svAchList" class="space-y-1.5 text-[10px]"></div>
+</div>
+<div id="svToast" class="sv-toast glass rounded-xl px-4 py-2 text-xs font-semibold text-cyan-200"></div>
+
 <script>
 const DATA = {
   Sun:{category:"Star",type:"G-type main-sequence star",diameter:"1,392,700 km",orbit:"≈230M years / galaxy",distance:"Center",moons:"0",temp:"≈5,500°C surface",year:"≈4.6 billion years",color:"#fbbf24",fact:"Contains about 99.8% of the Solar System's mass.",bio:"The gravitational anchor of our planetary system, powering life on Earth.",details:"Energy generated by nuclear fusion at its core radiates outward through the convective zone."},
   Mercury:{category:"Planet",type:"Terrestrial planet",diameter:"4,879 km",orbit:"88 days",distance:"0.39 AU",moons:"0",temp:"≈167°C average",year:"≈4.6 billion years",color:"#9ca3af",fact:"Smallest planet in the Solar System.",bio:"A small, dense rocky world with extreme temperature swings.",details:"Possesses a cratered basalt surface similar to Earth's Moon."},
   Venus:{category:"Planet",type:"Terrestrial planet",diameter:"12,104 km",orbit:"225 days",distance:"0.72 AU",moons:"0",temp:"≈464°C average",year:"≈4.6 billion years",color:"#e8b56a",fact:"Hottest planetary surface.",bio:"Wrapped in dense sulfuric acid clouds and carbon dioxide greenhouse atmosphere.",details:"Surface atmospheric pressure is 92 times greater than Earth's."},
-  Earth:{category:"Planet",type:"Terrestrial planet",diameter:"12,742 km",orbit:"365.25 days",distance:"1.00 AU",moons:"1",temp:"≈15°C average",year:"≈4.54 billion years",color:"#38bdf8",fact:"Known world with life.",bio:"Our home world with liquid water oceans and a protective magnetosphere.",details:"Dynamic tectonic plates recycle minerals that regulate global climate."},
-  Mars:{category:"Planet",type:"Terrestrial planet",diameter:"6,779 km",orbit:"687 days",distance:"1.52 AU",moons:"2",temp:"≈−63°C average",year:"≈4.6 billion years",color:"#ef4444",fact:"Home to Olympus Mons.",bio:"The Red Planet is rich in iron minerals and ancient dry river channels.",details:"Hosts the largest volcano (Olympus Mons) and canyon (Valles Marineris)."},
-  Jupiter:{category:"Planet",type:"Gas giant",diameter:"139,820 km",orbit:"11.86 years",distance:"5.20 AU",moons:"95",temp:"≈−110°C cloud tops",year:"≈4.6 billion years",color:"#d69a62",fact:"Largest planet.",bio:"A giant world of hydrogen and helium with strong magnetic radiation belts.",details:"Its Great Red Spot is an anticyclonic storm system active for centuries."},
-  Saturn:{category:"Planet",type:"Gas giant",diameter:"116,460 km",orbit:"29.45 years",distance:"9.58 AU",moons:"146",temp:"≈−140°C cloud tops",year:"≈4.6 billion years",color:"#e5c982",fact:"Most recognizable ring system.",bio:"Surrounded by billions of water-ice fragments and dust rings.",details:"Moons include Titan with liquid methane lakes and icy Enceladus."},
-  Uranus:{category:"Planet",type:"Ice giant",diameter:"50,724 km",orbit:"84 years",distance:"19.2 AU",moons:"28",temp:"≈−195°C cloud tops",year:"≈4.5 billion years",color:"#72d8e8",fact:"Rotates at a dramatic 98° tilt.",bio:"An ice giant rotating almost completely sideways on its orbital plane.",details:"Methane in its upper atmosphere absorbs red wavelengths, lending a cyan hue."},
-  Neptune:{category:"Planet",type:"Ice giant",diameter:"49,244 km",orbit:"164.8 years",distance:"30.1 AU",moons:"16",temp:"≈−200°C cloud tops",year:"≈4.5 billion years",color:"#4f8cff",fact:"Supersonic winds exceeding 2,100 km/h.",bio:"The most distant major planet with intense atmospheric storm dynamics.",details:"Its retrograde moon Triton erupts active nitrogen cryogeysers."},
+  Earth:{category:"Planet",type:"Terrestrial planet",diameter:"12,742 km",orbit:"365.25 days",distance:"1.00 AU",moons:"1 known",temp:"≈15°C average",year:"≈4.54 billion years",color:"#38bdf8",fact:"Known world with life.",bio:"Our home world with liquid water oceans and a protective magnetosphere.",details:"Dynamic tectonic plates recycle minerals that regulate global climate."},
+  Mars:{category:"Planet",type:"Terrestrial planet",diameter:"6,779 km",orbit:"687 days",distance:"1.52 AU",moons:"2 known",temp:"≈−63°C average",year:"≈4.6 billion years",color:"#ef4444",fact:"Home to Olympus Mons.",bio:"The Red Planet is rich in iron minerals and ancient dry river channels.",details:"Hosts the largest volcano (Olympus Mons) and canyon (Valles Marineris)."},
+  Jupiter:{category:"Planet",type:"Gas giant",diameter:"139,820 km",orbit:"11.86 years",distance:"5.20 AU",moons:"115 known",temp:"≈−110°C cloud tops",year:"≈4.6 billion years",color:"#d69a62",fact:"Largest planet.",bio:"A giant world of hydrogen and helium with strong magnetic radiation belts.",details:"Its Great Red Spot is an anticyclonic storm system active for centuries."},
+  Saturn:{category:"Planet",type:"Gas giant",diameter:"116,460 km",orbit:"29.45 years",distance:"9.58 AU",moons:"293 known",temp:"≈−140°C cloud tops",year:"≈4.6 billion years",color:"#e5c982",fact:"Most recognizable ring system.",bio:"Surrounded by billions of water-ice fragments and dust rings.",details:"Moons include Titan with liquid methane lakes and icy Enceladus."},
+  Uranus:{category:"Planet",type:"Ice giant",diameter:"50,724 km",orbit:"84 years",distance:"19.2 AU",moons:"29 known",temp:"≈−195°C cloud tops",year:"≈4.5 billion years",color:"#72d8e8",fact:"Rotates at a dramatic 98° tilt.",bio:"An ice giant rotating almost completely sideways on its orbital plane.",details:"Methane in its upper atmosphere absorbs red wavelengths, lending a cyan hue."},
+  Neptune:{category:"Planet",type:"Ice giant",diameter:"49,244 km",orbit:"164.8 years",distance:"30.1 AU",moons:"16 known",temp:"≈−200°C cloud tops",year:"≈4.5 billion years",color:"#4f8cff",fact:"Supersonic winds exceeding 2,100 km/h.",bio:"The most distant major planet with intense atmospheric storm dynamics.",details:"Its retrograde moon Triton erupts active nitrogen cryogeysers."},
   Ceres:{category:"Dwarf Planet",type:"Dwarf planet / asteroid-belt world",diameter:"≈940 km",orbit:"4.6 years",distance:"2.77 AU",moons:"0",temp:"≈−105°C",year:"≈4.6 billion years",color:"#b7a99a",fact:"Largest object in the asteroid belt.",bio:"The only dwarf planet inside Neptune's orbit, studied by NASA's Dawn.",details:"Contains bright salt dome deposits inside Occator Crater."},
   Pluto:{category:"Dwarf Planet",type:"Kuiper Belt dwarf planet",diameter:"≈2,377 km",orbit:"248 years",distance:"39.5 AU",moons:"5",temp:"≈−229°C",year:"≈4.5 billion years",color:"#c49a82",fact:"Has a famous heart-shaped nitrogen glacier.",bio:"Small world in the Kuiper Belt with five known orbiting satellites.",details:"Sputnik Planitia is an active glacier of frozen nitrogen and carbon monoxide."},
   Haumea:{category:"Dwarf Planet",type:"Kuiper Belt dwarf planet",diameter:"≈1,560 km",orbit:"284 years",distance:"43 AU",moons:"2",temp:"Very cold",year:"≈4.5 billion years",color:"#cbd5e1",fact:"Extremely fast 4-hour rotation.",bio:"Centrifugal force has deformed Haumea into an elongated cosmic football.",details:"Possesses its own narrow equatorial ring of icy particles."},
   Makemake:{category:"Dwarf Planet",type:"Kuiper Belt dwarf planet",diameter:"≈1,430 km",orbit:"305 years",distance:"45.8 AU",moons:"1",temp:"Very cold",year:"≈4.5 billion years",color:"#d8b4a0",fact:"Coated in frozen methane.",bio:"Extremely distant classical Kuiper Belt object discovered in 2005.",details:"Its discovery accelerated the 2006 IAU planet definition conference."},
   Eris:{category:"Dwarf Planet",type:"Scattered-disk dwarf planet",diameter:"≈2,326 km",orbit:"≈558 years",distance:"≈68 AU",moons:"1",temp:"Very cold",year:"≈4.5 billion years",color:"#d1d5db",fact:"Massive world in the scattered disk.",bio:"Roughly the same diameter as Pluto but significantly denser.",details:"Takes over five and a half centuries to complete one solar orbit."},
+  Moon:{category:"Moon",type:"Natural satellite of Earth",diameter:"3,474 km",orbit:"27.3 days",distance:"384,400 km from Earth",moons:"—",temp:"≈−20°C average",year:"≈4.5 billion years",color:"#cbd5e1",fact:"The Moon is tidally locked to Earth.",bio:"Earth's only natural satellite, with a heavily cratered surface and no substantial atmosphere.",details:"Its phases are caused by changing sunlight geometry as it orbits Earth."},
+  Io:{category:"Moon",type:"Volcanically active moon of Jupiter",diameter:"3,643 km",orbit:"1.77 days",distance:"≈421,700 km from Jupiter",moons:"—",temp:"≈−143°C average",year:"≈4.5 billion years",color:"#facc15",fact:"The most volcanically active world known.",bio:"Io is continually flexed by Jupiter and neighboring moons, driving intense volcanism.",details:"Hundreds of active volcanic centers reshape its sulfur-rich surface."},
+  Europa:{category:"Moon",type:"Icy moon of Jupiter",diameter:"3,122 km",orbit:"3.55 days",distance:"≈671,100 km from Jupiter",moons:"—",temp:"≈−160°C surface",year:"≈4.5 billion years",color:"#e5e7eb",fact:"May contain a global subsurface ocean.",bio:"Europa has a fractured water-ice shell and strong evidence for a deep salty ocean beneath it.",details:"Its surface is crisscrossed by long ridges and reddish-brown mineral markings."},
+  Ganymede:{category:"Moon",type:"Largest moon in the Solar System",diameter:"5,268 km",orbit:"7.15 days",distance:"≈1.07 million km from Jupiter",moons:"—",temp:"≈−160°C surface",year:"≈4.5 billion years",color:"#a8a29e",fact:"Larger than the planet Mercury by diameter.",bio:"Ganymede is the largest natural satellite and the only moon known to have its own magnetic field.",details:"Its surface mixes bright grooved terrain with older dark cratered regions."},
+  Callisto:{category:"Moon",type:"Outer moon of Jupiter",diameter:"4,821 km",orbit:"16.69 days",distance:"≈1.88 million km from Jupiter",moons:"—",temp:"≈−139°C surface",year:"≈4.5 billion years",color:"#78716c",fact:"One of the most heavily cratered bodies in the Solar System.",bio:"Callisto is an ancient icy world with a comparatively weak interaction with Jupiter's radiation belts.",details:"Its surface records billions of years of impacts and contains large multi-ring basins."},
+  Titan:{category:"Moon",type:"Atmospheric moon of Saturn",diameter:"5,150 km",orbit:"15.95 days",distance:"≈1.22 million km from Saturn",moons:"—",temp:"≈−179°C surface",year:"≈4.5 billion years",color:"#d6a85f",fact:"Has lakes and seas of liquid hydrocarbons.",bio:"Titan has a thick nitrogen-rich atmosphere and an active methane weather cycle.",details:"It is the only moon known to have a dense atmosphere and stable surface liquids."},
+  Enceladus:{category:"Moon",type:"Icy moon of Saturn",diameter:"504 km",orbit:"1.37 days",distance:"≈238,000 km from Saturn",moons:"—",temp:"≈−201°C surface",year:"≈4.5 billion years",color:"#f8fafc",fact:"Jets of water-rich material erupt from its south pole.",bio:"Enceladus is a small reflective moon with an underground ocean beneath its ice shell.",details:"Cassini observations detected plume material escaping through south-polar fractures."},
+  Rhea:{category:"Moon",type:"Icy moon of Saturn",diameter:"1,528 km",orbit:"4.52 days",distance:"≈527,000 km from Saturn",moons:"—",temp:"≈−174°C surface",year:"≈4.5 billion years",color:"#d1d5db",fact:"A bright, heavily cratered icy moon.",bio:"Rhea is dominated by water ice and rock, with a heavily cratered ancient surface.",details:"Its leading and trailing hemispheres show different patterns of bright and dark material."},
+  Triton:{category:"Moon",type:"Retrograde moon of Neptune",diameter:"2,707 km",orbit:"5.88 days",distance:"≈355,000 km from Neptune",moons:"—",temp:"≈−235°C surface",year:"≈4.5 billion years",color:"#c7d2fe",fact:"Orbits Neptune in the opposite direction to its rotation.",bio:"Triton is a cold nitrogen-ice world likely captured from the Kuiper Belt.",details:"Voyager 2 observed active nitrogen geysers and a varied icy surface."},
+  Titania:{category:"Moon",type:"Major moon of Uranus",diameter:"1,578 km",orbit:"8.71 days",distance:"≈436,000 km from Uranus",moons:"—",temp:"≈−203°C surface",year:"≈4.5 billion years",color:"#94a3b8",fact:"The largest moon of Uranus.",bio:"Titania is an icy, rocky moon cut by large valleys and fault systems.",details:"Its surface appears to contain water ice mixed with darker non-ice material."},
+  Oberon:{category:"Moon",type:"Major moon of Uranus",diameter:"1,523 km",orbit:"13.46 days",distance:"≈584,000 km from Uranus",moons:"—",temp:"≈−203°C surface",year:"≈4.5 billion years",color:"#64748b",fact:"The outermost of Uranus's five major moons.",bio:"Oberon is a dark icy moon with ancient craters and bright deposits along some crater walls.",details:"Voyager 2 imagery revealed a long geological history despite limited coverage."},
   AsteroidBelt:{category:"Region",type:"Rocky remnant belt",diameter:"Millions of bodies",orbit:"2–3.3 AU",distance:"Between Mars & Jupiter",moons:"—",temp:"Varies",year:"Ancient leftovers",color:"#a8a29e",fact:"Prevented from forming a planet by Jupiter.",bio:"A broad ring containing rocky and metallic remnants from the early solar nebula.",details:"Total mass is less than 4% of Earth's Moon."},
   KuiperBelt:{category:"Region",type:"Icy outer disc",diameter:"Millions of bodies",orbit:"30–55 AU",distance:"Beyond Neptune",moons:"—",temp:"Extremely cold",year:"Ancient leftovers",color:"#60a5fa",fact:"Home of Pluto and short-period comets.",bio:"A massive 3D torus of primordial icy bodies extending past Neptune's orbit.",details:"Provides source material for short-period comets."},
   OortCloud:{category:"Region",type:"Spherical cometary shell",diameter:"Billions of comets",orbit:"2k–100k AU",distance:"Deep Interstellar Border",moons:"—",temp:"≈4 Kelvin",year:"Ancient leftovers",color:"#818cf8",fact:"Extends up to nearly a light-year out.",bio:"An immense spherical swarm of icy bodies encasing the solar system.",details:"The origin reservoir for non-periodic long-duration comets."},
@@ -500,6 +565,24 @@ const meshes = [];
 let earthMesh = null;
 let jupiterMesh = null;
 
+// Moon Explorer data: parent body, orbital radius, speed and visual radius.
+const MOON_DEFS = [
+  {name:"Moon", parent:"Earth", orbit:8.0, speed:0.55, r:1.15, tilt:0.12},
+  {name:"Io", parent:"Jupiter", orbit:7.2, speed:1.25, r:1.15, tilt:0.04},
+  {name:"Europa", parent:"Jupiter", orbit:9.2, speed:0.86, r:1.0, tilt:0.08},
+  {name:"Ganymede", parent:"Jupiter", orbit:11.5, speed:0.60, r:1.55, tilt:0.12},
+  {name:"Callisto", parent:"Jupiter", orbit:15.0, speed:0.38, r:1.4, tilt:0.16},
+  {name:"Titan", parent:"Saturn", orbit:8.2, speed:0.50, r:1.45, tilt:0.10},
+  {name:"Enceladus", parent:"Saturn", orbit:6.0, speed:0.95, r:0.48, tilt:0.04},
+  {name:"Rhea", parent:"Saturn", orbit:10.8, speed:0.70, r:0.68, tilt:0.12},
+  {name:"Triton", parent:"Neptune", orbit:6.0, speed:-0.48, r:0.95, tilt:0.10},
+  {name:"Titania", parent:"Uranus", orbit:6.5, speed:0.55, r:0.70, tilt:0.18},
+  {name:"Oberon", parent:"Uranus", orbit:8.8, speed:0.42, r:0.67, tilt:0.24}
+];
+const moonMeshes = [];
+const moonOrbits = [];
+const moonLabels = [];
+
 PLANETS.forEach(p => {
   const pMat = new THREE.MeshStandardMaterial({map: generateTexture(p.type), roughness:.72, metalness:.08});
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(p.r, 64, 64), pMat);
@@ -530,6 +613,40 @@ PLANETS.forEach(p => {
 
   scene.add(mesh); meshes.push(mesh);
 });
+
+// Moon Explorer meshes and orbital guides.
+const moonGroup = new THREE.Group();
+moonGroup.name = "Moon Explorer";
+scene.add(moonGroup);
+
+function createMoon(def){
+  const parent = meshes.find(m => m.name === def.parent);
+  if(!parent) return;
+  const mat = new THREE.MeshStandardMaterial({map: generateTexture(def.name.toLowerCase()), roughness:.9, metalness:.02});
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(def.r, 32, 32), mat);
+  mesh.name = def.name;
+  mesh.userData = { ...def, angle: Math.random()*Math.PI*2, parentMesh: parent };
+  mesh.position.copy(parent.position);
+  mesh.position.x += Math.cos(mesh.userData.angle) * def.orbit;
+  mesh.position.z += Math.sin(mesh.userData.angle) * def.orbit;
+  moonGroup.add(mesh);
+  moonMeshes.push(mesh);
+
+  const ringGeo = new THREE.RingGeometry(def.orbit-.025, def.orbit+.025, 96);
+  const ringMat = new THREE.LineBasicMaterial({color:0x64748b, transparent:true, opacity:.18});
+  const ring = new THREE.LineLoop(ringGeo, ringMat);
+  ring.rotation.x = Math.PI/2 + def.tilt;
+  ring.position.copy(parent.position);
+  moonGroup.add(ring);
+  moonOrbits.push({ring, parent});
+
+  const c=document.createElement('canvas'); c.width=220; c.height=50;
+  const ctx=c.getContext('2d'); ctx.font='bold 18px Inter, Arial'; ctx.fillStyle='rgba(225,240,255,.88)'; ctx.textAlign='center'; ctx.fillText(def.name,110,31);
+  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));
+  sprite.scale.set(8,1.8,1); scene.add(sprite);
+  moonLabels.push({mesh,sprite});
+}
+MOON_DEFS.forEach(createMoon);
 
 // Billboard Labels
 let labelsVisible = true;
@@ -738,7 +855,7 @@ document.getElementById('resetWarp').addEventListener('click', () => {
 
 // Catalog Bottom Drawer
 const planetScroll = document.getElementById("planetScroll");
-const icons = {Sun:"☀️",Mercury:"☿",Venus:"♀",Earth:"🌍",Mars:"♂",Jupiter:"♃",Saturn:"♄",Uranus:"♅",Neptune:"♆",Ceres:"◉",Pluto:"◈",Haumea:"◇",Makemake:"◌",Eris:"◍",AsteroidBelt:"✦",KuiperBelt:"❄",OortCloud:"◌",Voyager1:"V1",Voyager2:"V2",NewHorizons:"NH"};
+const icons = {Sun:"☀️",Mercury:"☿",Venus:"♀",Earth:"🌍",Mars:"♂",Jupiter:"♃",Saturn:"♄",Uranus:"♅",Neptune:"♆",Ceres:"◉",Pluto:"◈",Haumea:"◇",Makemake:"◌",Eris:"◍",AsteroidBelt:"✦",KuiperBelt:"❄",OortCloud:"◌",Voyager1:"V1",Voyager2:"V2",NewHorizons:"NH",Moon:"🌙",Io:"◉",Europa:"◌",Ganymede:"◎",Callisto:"◍",Titan:"◐",Enceladus:"✦",Rhea:"◒",Triton:"◇",Titania:"○",Oberon:"●"};
 let selected = null, currentTab = "planets", speed = 1, paused = false;
 const cameraOffset = new THREE.Vector3(12, 8, 22);
 
@@ -746,7 +863,8 @@ const CATALOG = {
   planets: ["Sun", "Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"],
   dwarfs: ["Ceres", "Pluto", "Haumea", "Makemake", "Eris"],
   regions: ["AsteroidBelt", "KuiperBelt", "OortCloud"],
-  missions: ["Voyager1", "Voyager2", "NewHorizons"]
+  missions: ["Voyager1", "Voyager2", "NewHorizons"],
+  moons: ["Moon", "Io", "Europa", "Ganymede", "Callisto", "Titan", "Enceladus", "Rhea", "Triton", "Titania", "Oberon"]
 };
 
 function createCard(name){
@@ -793,8 +911,21 @@ function showInfo(name){
   document.querySelectorAll(".planet-card").forEach(x => x.classList.toggle("active", x.dataset.name === name));
 }
 
+function focusMoon(name){
+  const m=moonMeshes.find(x=>x.name===name);
+  if(!m) return false;
+  selected=m;
+  showInfo(name);
+  const target=m.position.clone();
+  controls.target.copy(target);
+  camera.position.copy(target.clone().add(new THREE.Vector3(9,5,14)));
+  document.getElementById("status").textContent="TRACKING MOON " + name.toUpperCase();
+  return true;
+}
+
 function focusName(name){
   if (compareMode) return;
+  if (moonMeshes.some(m=>m.name===name)) { focusMoon(name); return; }
   const m = name === "Sun" ? sun : meshes.find(x => x.name === name);
   if (m) {
     selected = m;
@@ -863,7 +994,7 @@ window.addEventListener("click", e => {
   mouse.y = -(e.clientY / innerHeight) * 2 + 1;
   ray.setFromCamera(mouse, camera);
 
-  const targets = [sun, ...meshes, ...Object.values(spacecraftMeshes)];
+  const targets = [sun, ...meshes, ...moonMeshes, ...Object.values(spacecraftMeshes)];
   const hit = ray.intersectObjects(targets, true);
 
   if (hit.length) {
@@ -962,6 +1093,25 @@ function animate() {
     }
   }
 
+  // Moon orbital dynamics follow their parent planet.
+  if (!paused && !compareMode) {
+    moonMeshes.forEach(m => {
+      const parent=m.userData.parentMesh;
+      if(!parent) return;
+      m.userData.angle += dt * m.userData.speed * speed;
+      const a=m.userData.angle;
+      const y=Math.sin(a) * Math.sin(m.userData.tilt) * m.userData.orbit;
+      m.position.set(
+        parent.position.x + Math.cos(a) * m.userData.orbit,
+        parent.position.y + y,
+        parent.position.z + Math.sin(a) * m.userData.orbit
+      );
+      m.rotation.y += dt*.35;
+    });
+    moonOrbits.forEach(o=>o.ring.position.copy(o.parent.position));
+    moonLabels.forEach(x=>{x.sprite.position.copy(x.mesh.position);x.sprite.position.y+=x.mesh.userData.r+.9;x.sprite.visible=labelsVisible;});
+  }
+
   // 2. CAMERA & NAVIGATION MODE DISPATCHER
   if (flightMode) {
     if (keys['KeyA']) ship.rot.y += dt * 1.5;
@@ -1017,6 +1167,76 @@ window.addEventListener("resize", () => {
 });
 
 focusName("Earth");
+</script>
+
+<script id="spaceview-v11-js">
+(function(){
+  const allNames = Object.keys(DATA);
+  const search = document.getElementById('svSearch');
+  const results = document.getElementById('svResults');
+  const factText = document.getElementById('svFactText');
+  const newFact = document.getElementById('svNewFact');
+  const toast = document.getElementById('svToast');
+  const facts = [
+    'A day on Venus is longer than its year.',
+    'Jupiter is so massive that it contains more than twice the mass of all the other planets combined.',
+    'Neptune has some of the fastest winds measured on a planet in the Solar System.',
+    'Pluto takes about 248 Earth years to orbit the Sun.',
+    'Voyager 1 and Voyager 2 were launched in 1977.',
+    'The Oort Cloud is a proposed distant reservoir of icy bodies surrounding the Solar System.',
+    'Earth is the only world currently known to host life.',
+    'Saturn\'s rings are made mostly of water ice, with dust and rocky material mixed in.'
+  ];
+  function showToast(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(showToast.t);showToast.t=setTimeout(()=>toast.classList.remove('show'),1800)}
+  function renderResults(q=''){
+    const term=q.trim().toLowerCase();
+    const list=allNames.filter(n=>!term || n.toLowerCase().includes(term) || (DATA[n].type||'').toLowerCase().includes(term));
+    results.innerHTML=list.slice(0,12).map(n=>`<button class="sv-result" data-sv-name="${n}"><span><b>${n}</b><span class="text-slate-500 ml-2">${DATA[n].category}</span></span><span>→</span></button>`).join('');
+    results.classList.toggle('hidden',list.length===0);
+    results.querySelectorAll('[data-sv-name]').forEach(b=>b.onclick=()=>{focusName(b.dataset.svName);results.classList.add('hidden');search.value='';unlock('searcher',20);});
+  }
+  search.addEventListener('focus',()=>renderResults(search.value)); search.addEventListener('input',()=>renderResults(search.value));
+  document.addEventListener('click',e=>{if(!e.target.closest('.sv-search'))results.classList.add('hidden')});
+  document.addEventListener('keydown',e=>{if(e.key==='/' && document.activeElement!==search){e.preventDefault();search.focus()} if(e.key==='?' ){document.getElementById('svNewFact').click()}});
+  function randomFact(){factText.textContent=facts[Math.floor(Math.random()*facts.length)]}
+  newFact.onclick=randomFact; randomFact();
+
+  const missions={
+    Mars:['Locate Mars','Open Mars information','Activate Quiz mode'],
+    Voyager1:['Locate Voyager 1','Inspect mission information','Launch a probe'],
+    Pluto:['Locate Pluto','Open Pluto information','Compare planetary scale'],
+    Jupiter:['Locate Jupiter','Inspect Jupiter information','Launch a probe']
+  };
+  const missionBox=document.getElementById('svMission'), missionTitle=document.getElementById('svMissionTitle'), missionText=document.getElementById('svMissionText'), missionBar=document.getElementById('svMissionBar'), missionStep=document.getElementById('svMissionStep');
+  let activeMission=null, missionDone=0;
+  function startMission(name){if(!missions[name])return;activeMission=name;missionDone=0;missionBox.classList.remove('hidden');missionTitle.textContent=name+' Exploration';missionText.textContent='Complete three exploration objectives to finish this mission.';updateMission()}
+  function updateMission(){if(!activeMission)return;const steps=missions[activeMission];missionBar.style.width=(missionDone/steps.length*100)+'%';missionStep.textContent=missionDone<steps.length?`Objective ${missionDone+1}/${steps.length}: ${steps[missionDone]}`:'Mission complete — +150 XP';if(missionDone>=steps.length){unlock('mission',150)}}
+  document.getElementById('svCloseMission').onclick=()=>missionBox.classList.add('hidden');
+
+  const achievementDefs={
+    first:['First Contact','Open your first space object.',25], searcher:['Navigator','Use Deep Space Search.',20], quiz:['Quiz Cadet','Enter Quiz mode.',30], probe:['Probe Commander','Launch a probe.',40], mission:['Mission Specialist','Complete a mission.',150], explorer:['Deep Space Explorer','Visit a deep-space region.',50], moon:['Lunar Navigator','Explore a moon.',35]
+  };
+  let ach=JSON.parse(localStorage.getItem('spaceview-achievements')||'{}');
+  function unlock(key,xp){if(ach[key])return;ach[key]=true;localStorage.setItem('spaceview-achievements',JSON.stringify(ach));showToast('🏆 '+achievementDefs[key][0]+' +'+xp+' XP');renderAch()}
+  function renderAch(){const xp=Object.keys(ach).reduce((s,k)=>s+(achievementDefs[k]?.[2]||0),0);document.getElementById('svXP').textContent=xp+' XP';document.getElementById('svAchList').innerHTML=Object.entries(achievementDefs).map(([k,v])=>`<div class="flex justify-between ${ach[k]?'text-emerald-300':'text-slate-600'}"><span>${ach[k]?'✓':'○'} ${v[0]}</span><span>${v[2]}</span></div>`).join('')}
+  renderAch();
+
+  const oldFocus=window.focusName;
+  window.focusName=function(name){oldFocus(name);unlock('first',25);if(moonMeshes.some(m=>m.name===name))unlock('moon',35);if(['AsteroidBelt','KuiperBelt','OortCloud','Voyager1','Voyager2','NewHorizons'].includes(name))unlock('explorer',50);if(activeMission){const step=missions[activeMission][missionDone]||'';if(step.toLowerCase().includes('locate')&&name===activeMission){missionDone++;updateMission()} if(step.toLowerCase().includes('information')&&name===activeMission){missionDone++;updateMission()}}};
+  const oldLaunch=window.launchProbe;
+  if(oldLaunch) window.launchProbe=function(){oldLaunch();unlock('probe',40);if(activeMission&&missions[activeMission][missionDone]?.includes('probe')){missionDone++;updateMission()}};
+  const quizBtn=document.getElementById('quizBtn'); quizBtn.addEventListener('click',()=>{if(!quizActive)unlock('quiz',30)});
+  document.querySelectorAll('.planet-card').forEach(()=>{});
+
+  // Mission launcher from catalog: double-click a supported target.
+  document.addEventListener('dblclick',e=>{const card=e.target.closest('.planet-card');if(card)startMission(card.dataset.name)});
+  window.addEventListener('keydown',e=>{if(e.code==='KeyM'){const n=selected?.name; if(n && missions[n])startMission(n)} });
+
+  // Add a compact live speed badge.
+  const badge=document.createElement('div');badge.className='glass rounded-xl px-3 py-2 fixed right-4 top-24 z-20 hidden md:block pointer-events-none';badge.innerHTML='<div class="text-[9px] uppercase tracking-[.2em] text-slate-500">Simulation Speed</div><div id="svSpeed" class="text-xs text-cyan-300 font-mono mt-1">1.00×</div>';document.body.appendChild(badge);
+  const speedEl=document.getElementById('svSpeed');setInterval(()=>speedEl.textContent=(typeof speed==='number'?speed:1).toFixed(2)+'×',150);
+  showToast('SpaceView 1.1 enhancements loaded');
+})();
 </script>
 </body>
 </html>
