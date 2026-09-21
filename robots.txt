@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://beeresh01.github.io/SpaceView/sitemap.xml
